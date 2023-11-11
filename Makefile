@@ -25,11 +25,11 @@
 # the Free Software Foundation, 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 #
-SRCDIR=.
+SRCDIR=src/
 
-BASEDIR=$(SRCDIR)/..
+BASEDIR=SimpleGEL/
 
-fuentes:=$(wildcard *.c)
+fuentes:=$(wildcard $(SRCDIR)/*.c)
 
 s19s:=$(fuentes:.c=.s19)
 
@@ -46,6 +46,5 @@ all : $(fuentes:.c=.elf) $(s19s)
 
 #simple.elf:	$(OBJS)
 #	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
-
 
 include $(BASEDIR)/config/make.defs
