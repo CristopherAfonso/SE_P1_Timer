@@ -44,7 +44,7 @@ void timer_sleep_milis(uint32_t milis);
  *
  * @param micros El tiempo de espera en microsecundos
  */
-void timer_sleep_micro(uint32_t micros);
+void timer_sleep_micros(uint32_t micros);
 
 /**
  * @brief Registra una tarea para que se ejecute cuando pase el tiempo indicado
@@ -74,8 +74,8 @@ uint8_t timer_add_periodic_task(void (*task)(void* params), void* params,
                                 uint32_t period);
 
 /**
- * @brief
+ * @brief Elimina una tarea
  *
- * @param id
+ * @param id id de la tarea
  */
 void timer_remove_task(uint8_t id);
