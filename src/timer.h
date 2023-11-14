@@ -49,13 +49,16 @@ void timer_sleep_micros(uint32_t micros);
 /**
  * @brief Registra una tarea para que se ejecute cuando pase el tiempo indicado
  * desde que se inicio el sistema
- * @warning La tarea se ejecutara en la interrupcion del timer, por lo que no se
- * puede llamar a funciones que no sean seguras en interrupciones
+ * @warning La tarea se ejecutara en una interupcion, por lo que no se
+ * puede llamar a funciones que no sean seguras en interrupciones. Si se
+ * registran tareas muy seguidas, puede colisionar con la anterior, generando un
+ * estado inestable.
  *
  * @param task funcion que se ejecutara, debe ser void task(void * params), en
  * donde params es un puntero a los parametros que se le pasaran a la funcion
  * @param params puntero a los parametros que se le pasaran a la funcion
- * @param when tiempo en milisegundos desde que se inicio el sistema
+ * @param when tiempo en microsegundos desde que se inicio el sistema, se
+ * recomienda que sea mayor a 1000 del actual
  * @return uint8_t id de la tarea
  */
 uint8_t timer_add_task(void (*task)(void* params), void* params, uint32_t when);
@@ -63,11 +66,15 @@ uint8_t timer_add_task(void (*task)(void* params), void* params, uint32_t when);
 /**
  * @brief Registra una tarea para que se ejecute periodicamente cada cierto
  * tiempo
+ * @warning La tarea se ejecutara en una interupcion, por lo que no se
+ * puede llamar a funciones que no sean seguras en interrupciones. Si se
+ * registran tareas muy seguidas, puede colisionar con la anterior, generando un
+ * estado inestable.
  *
  * @param task funcion que se ejecutara, debe ser void task(void * params), en
  * donde params es un puntero a los parametros que se le pasaran a la funcion
  * @param params puntero a los parametros que se le pasaran a la funcion
- * @param period periodo en milisegundos
+ * @param period periodo en microsegundos, se recomienda que sea mayor a 1000
  * @return uint8_t id de la tarea
  */
 uint8_t timer_add_periodic_task(void (*task)(void* params), void* params,
