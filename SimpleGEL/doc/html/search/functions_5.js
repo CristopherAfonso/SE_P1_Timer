@@ -1,0 +1,4 @@
+var searchData=
+[
+  ['main',['main',['../_cambia_a_mayuscula_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;CambiaAMayuscula.c'],['../_delay_usg_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;DelayUsg.c'],['../_lee_analogica_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;LeeAnalogica.c'],['../_maneja_s_p_i_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;ManejaSPI.c'],['../_onda_cuadrada_o_c2_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;OndaCuadradaOC2.c'],['../_onda_general_o_c2_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;OndaGeneralOC2.c'],['../_porcentaje_alto_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;PorcentajeAlto.c'],['../_utilidades_seriales_8c.html#ae66f6b31b5ad750f1fe042a706a4e3d4',1,'main():&#160;UtilidadesSeriales.c']]]
+];

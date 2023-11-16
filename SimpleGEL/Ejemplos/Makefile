@@ -25,17 +25,11 @@
 # the Free Software Foundation, 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 #
-SRCDIR=test/
+SRCDIR=.
 
-BASEDIR=SimpleGEL/
+BASEDIR=$(SRCDIR)/..
 
-INCLUDES=$(INCLUDES) -Isrc/
-
-CSRCS=src/timer.h src/timer.c
-
-OBJS=$(CSRCS:.c=.o)
-
-fuentes:=$(wildcard $(SRCDIR)/*.c)
+fuentes:=$(wildcard *.c)
 
 s19s:=$(fuentes:.c=.s19)
 
@@ -47,13 +41,11 @@ s19s:=$(fuentes:.c=.s19)
 
 .PHONY : all
 
-all : libtimer.a $(fuentes:.c=.elf) $(s19s)
-
-libtimer.a:	$(OBJS)
-	$(AR) r $@ $(OBJS)
+all : $(fuentes:.c=.elf) $(s19s)
 
 
 #simple.elf:	$(OBJS)
 #	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
 
 include $(BASEDIR)/config/make.defs
