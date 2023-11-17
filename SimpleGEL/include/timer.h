@@ -6,7 +6,7 @@
  *
  *
  */
-void timer_init(void);
+void timer_init(uint8_t tcm_factor);
 
 /**
  * @brief Obtiene el tiempo en milisegundos desde que se inicio el sistema

@@ -2,16 +2,20 @@
 #include <types.h>
 #include <timer.h>
 
-#define TCM_FACTOR (3)  // La potencia de 2 a aplicar al factor
+#define  TCM_FREQ (M6812_CPU_E_CLOCK / (1 << TCM_FACTOR))
+/*Pasa de microsegundos a ticks*/
+#define  USG_2_TICKS(us)  ((us) * (TCM_FREQ / 1000000L))
+/*Pasa de milisegundos a ticks*/
+#define  MSG_2_TICKS(ms)  ((ms) * (TCM_FREQ / 1000L))
 
 uint16_t timer_ticks_msb;
 
-void timer_init(void) {
+void timer_init(uint8_t tcm_factor) {
   // La primera vez que iniciamos el temporizador, reseteamos la variable global
   timer_ticks_msb = 0;
 
   // Especificamos que el contador global estará en microsegundos
-  _io_ports[M6812_TMSK2] = TCM_FACTOR;
+  _io_ports[M6812_TMSK2] = tcm_factor;
 
   // Habilitamos las interrupciones de desbordamiento del temporizador
   _io_ports[M6812_TMSK2] |= M6812B_TOI;
@@ -20,9 +24,15 @@ void timer_init(void) {
   _io_ports[M6812_TSCR] |= M6812B_TEN;
 }
 
-uint32_t timer_milis(void) {
+uint32_t timer_milis(void) {	
+// Ponemos la variable global en los 16 bits más grandes del resultado
+  uint32_t result = (uint32_t)timer_ticks_msb << 16;
+
+  // Le sumamos el valor actual del contador
+  result += _io_ports[M6812_TCNT];
+  
   // Cogemos el tiempo en microsegundos y lo pasamos a milisegundos
-  return timer_micros() / 1000;
+  return result / 1000;
 }
 
 uint32_t timer_micros(void) {
@@ -36,13 +46,13 @@ uint32_t timer_micros(void) {
 }
 
 void timer_sleep_milis(uint32_t milis) {
-	timer_sleep_micros(milis * (uint32_t)1000);
+	uint32_t timer = timer_micros();
+	while (timer_micros() < timer + milis * (uint32_t)1000);
 }
 
 void timer_sleep_micros(uint32_t micros) {
 	uint32_t timer = timer_micros();
-	while (timer_micros() < timer + micros)
-	    __asm__ __volatile__("wai");
+	while (timer_micros() < timer + micros);
 }
 
 struct timer_task {

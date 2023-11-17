@@ -13,7 +13,7 @@ void test_task(void *params) {
 
 int main() {
   serial_init();
-  timer_init();
+  timer_init(3);
   
   uint8_t param = 5;
   uint8_t id = timer_add_periodic_task(test_task, &param, 3000000);
