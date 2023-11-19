@@ -13,13 +13,16 @@
 #include <timer.h>
 #include <types.h>
 
-#define TCM_FREQ (M6812_CPU_E_CLOCK / (1 << TCM_FACTOR))
-/*Pasa de microsegundos a ticks*/
-#define USG_2_TICKS(us) ((us) * (TCM_FREQ / 1000000L))
-/*Pasa de milisegundos a ticks*/
-#define MSG_2_TICKS(ms) ((ms) * (TCM_FREQ / 1000L))
+#define TCM_FREQ(tcm_factor) (M6812_CPU_E_CLOCK / (1 << tcm_factor))
+// Pasamos de ticks a microsegundos según el factor de escala del temporizador
+#define TICKS_2_MICROS(ticks, tcm_factor) \
+  ((ticks) / (TCM_FREQ(tcm_factor) / 1000000L))
+// Pasamos de microsegundos a ticks según el factor de escala del temporizador
+#define MICROS_2_TICKS(micros, tcm_factor) \
+  ((micros) * (TCM_FREQ(tcm_factor) / 1000000L))
 
 uint16_t timer_ticks_msb;
+uint8_t timer_tcm_factor;  // Guardamos el factor de escala del temporizador
 
 void timer_init(uint8_t tcm_factor) {
   // La primera vez que iniciamos el temporizador, reseteamos la variable global
@@ -27,6 +30,7 @@ void timer_init(uint8_t tcm_factor) {
 
   // Especificamos que el contador global estará en microsegundos
   _io_ports[M6812_TMSK2] = tcm_factor;
+  timer_tcm_factor = tcm_factor;
 
   // Habilitamos las interrupciones de desbordamiento del temporizador
   _io_ports[M6812_TMSK2] |= M6812B_TOI;
@@ -53,7 +57,7 @@ uint32_t timer_micros(void) {
   // Le sumamos el valor actual del contador
   result += _io_ports[M6812_TCNT];
 
-  return result;
+  return TICKS_2_MICROS(result, timer_tcm_factor);
 }
 
 void timer_sleep_milis(uint32_t milis) {
@@ -106,7 +110,7 @@ void timer_rearm_tasker() {
 #endif  // DEBUG
 
     // Ponemos en que valor del contador global se activará el comparador 1
-    _IO_PORTS_W(M6812_TC1) = next_task->when;
+    _IO_PORTS_W(M6812_TC1) = MICROS_2_TICKS(next_task->when, timer_tcm_factor);
     // Encendemos el comparador 1
     _io_ports[M6812_TIOS] |= M6812B_IOS1;
     // Ponemos el flag del comparador 1 a 0
