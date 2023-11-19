@@ -1,12 +1,23 @@
+/**
+ * @file timer.h
+ * @author Francesco La Spina (alu0101435022@ull.edu.es)
+ * @author CRISTOPHER MANUEL AFONSO MORA (alu0101402031@ull.edu.es)
+ * @brief Libreria de temporizacion
+ * @version 0.1
+ * @date 2023-11-19
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include <sys/sio.h>
-#include <types.h>
 #include <timer.h>
+#include <types.h>
 
-#define  TCM_FREQ (M6812_CPU_E_CLOCK / (1 << TCM_FACTOR))
+#define TCM_FREQ (M6812_CPU_E_CLOCK / (1 << TCM_FACTOR))
 /*Pasa de microsegundos a ticks*/
-#define  USG_2_TICKS(us)  ((us) * (TCM_FREQ / 1000000L))
+#define USG_2_TICKS(us) ((us) * (TCM_FREQ / 1000000L))
 /*Pasa de milisegundos a ticks*/
-#define  MSG_2_TICKS(ms)  ((ms) * (TCM_FREQ / 1000L))
+#define MSG_2_TICKS(ms) ((ms) * (TCM_FREQ / 1000L))
 
 uint16_t timer_ticks_msb;
 
@@ -24,13 +35,13 @@ void timer_init(uint8_t tcm_factor) {
   _io_ports[M6812_TSCR] |= M6812B_TEN;
 }
 
-uint32_t timer_milis(void) {	
-// Ponemos la variable global en los 16 bits más grandes del resultado
+uint32_t timer_milis(void) {
+  // Ponemos la variable global en los 16 bits más grandes del resultado
   uint32_t result = (uint32_t)timer_ticks_msb << 16;
 
   // Le sumamos el valor actual del contador
   result += _io_ports[M6812_TCNT];
-  
+
   // Cogemos el tiempo en microsegundos y lo pasamos a milisegundos
   return result / 1000;
 }
@@ -46,13 +57,15 @@ uint32_t timer_micros(void) {
 }
 
 void timer_sleep_milis(uint32_t milis) {
-	uint32_t timer = timer_micros();
-	while (timer_micros() < timer + milis * (uint32_t)1000);
+  uint32_t timer = timer_micros();
+  while (timer_micros() < timer + milis * (uint32_t)1000)
+    ;
 }
 
 void timer_sleep_micros(uint32_t micros) {
-	uint32_t timer = timer_micros();
-	while (timer_micros() < timer + micros);
+  uint32_t timer = timer_micros();
+  while (timer_micros() < timer + micros)
+    ;
 }
 
 struct timer_task {
@@ -81,19 +94,29 @@ void timer_rearm_tasker() {
       }
     }
   }
-  
+
   // Si next_task no esta vacio, rearmamos el tasker (comparador 1)
-    if (next_task != 0) {
-	  //serial_print("\n Rearming ");
-	  //serial_printdecbyte(next_task->id);
-	  //serial_print(" ");
-	  //serial_printdecword(next_task->when);
-	  _IO_PORTS_W(M6812_TC1) = next_task->when;
-	  _io_ports[M6812_TIOS] |= M6812B_IOS1;
-	  _io_ports[M6812_TFLG1] |= M6812B_IOS1;
-      _io_ports[M6812_TMSK1] |= M6812B_IOS1;
-      timer_tasker_armed = 1;
-    }
+  if (next_task != 0) {
+#ifdef DEBUG
+    serial_print("\n Rearming ");
+    serial_printdecbyte(next_task->id);
+    serial_print(" ");
+    serial_printdecword(next_task->when);
+    serial_print("\n");
+#endif  // DEBUG
+
+    // Ponemos en que valor del contador global se activará el comparador 1
+    _IO_PORTS_W(M6812_TC1) = next_task->when;
+    // Encendemos el comparador 1
+    _io_ports[M6812_TIOS] |= M6812B_IOS1;
+    // Ponemos el flag del comparador 1 a 0
+    _io_ports[M6812_TFLG1] |= M6812B_IOS1;
+    // Habilitamos las interrupciones del comparador 1
+    _io_ports[M6812_TMSK1] |= M6812B_IOS1;
+
+    // Especificamos que el tasker está armado
+    timer_tasker_armed = 1;
+  }
 }
 
 uint8_t timer_add_task(void (*task)(void* params), void* params,
@@ -166,6 +189,10 @@ void __attribute__((interrupt)) vi_tov(void) {
   // Ponemos el flag de desbordamiento a 0
   _io_ports[M6812_TFLG2] = M6812B_TOF;
 
+#ifdef DEBUG
+  serial_print("\n int overflow \n");
+#endif  // DEBUG
+
   // Incrementamos el contador de ticks MSB
   timer_ticks_msb++;
 }
@@ -175,8 +202,16 @@ void __attribute__((interrupt)) vi_tov(void) {
  *
  */
 void __attribute__((interrupt)) vi_ioc1(void) {
-  // Ponemos el flag del comparador 0 a 0
+  // Ponemos el flag del comparador 1 a 0
   _io_ports[M6812_TFLG1] |= M6812B_IOS1;
+
+  // Desarmamos el tasker
+  timer_tasker_armed = 0;
+  _io_ports[M6812_TMSK1] &= ~M6812B_IOS1;
+
+#ifdef DEBUG
+  serial_print("\n int tasker \n");
+#endif  // DEBUG
 
   // Recorremos todas las tareas, en busca de las que tengan un when menor o
   // igual al actual

@@ -1,3 +1,14 @@
+/**
+ * @file timer.h
+ * @author Francesco La Spina (alu0101435022@ull.edu.es)
+ * @author CRISTOPHER MANUEL AFONSO MORA (alu0101402031@ull.edu.es)
+ * @brief Libreria de temporizacion
+ * @version 0.1
+ * @date 2023-11-19
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include <types.h>
 
 /**
