@@ -21,12 +21,20 @@ int main() {
   serial_init();
   timer_init(3);
   uint32_t cuenta = 0;
+  uint32_t miliseg = 0;
+  uint32_t microseg = 0;
 
   // Cuenta cada segundo
   while (1) {
-    serial_printdeclong(cuenta);
-    serial_print("\n");
     timer_sleep_milis(1000);
     cuenta++;
+    miliseg = timer_milis();
+    microseg = timer_micros();
+    serial_print("\nSegundos: ");
+    serial_printdeclong(cuenta);
+    serial_print("; Milisegundos: ");
+    serial_printdeclong(miliseg);
+    serial_print("; Microsegundos: ");
+    serial_printdeclong(microseg);
   }
 }

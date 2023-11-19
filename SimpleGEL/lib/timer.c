@@ -47,7 +47,7 @@ uint32_t timer_milis(void) {
   result += _io_ports[M6812_TCNT];
 
   // Cogemos el tiempo en microsegundos y lo pasamos a milisegundos
-  return result / 1000;
+  return TICKS_2_MICROS(result, timer_tcm_factor) / 1000;
 }
 
 uint32_t timer_micros(void) {
