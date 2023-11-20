@@ -9,6 +9,7 @@
  * @copyright Copyright (c) 2023
  *
  */
+#include <sys/param.h>
 #include <sys/sio.h>
 #include <timer.h>
 #include <types.h>
@@ -82,51 +83,60 @@ struct timer_task {
 
 // tamaño timer task: 1(id) + 1(periodic) + 4(when) + 2(task) + 2(params) = 10
 // bytes 10 * 254 = 2540 bytes = 2.48 KB
-struct timer_task timer_tasks[254];  // 254 tareas como máximo, pues el id es
-                                     // uint8_t y el 0 no se usa
-uint8_t timer_tasker_armed = 0;
+struct timer_task timer_tasks[8];  // 8 tareas como máximo, pues el id es
+                                   // uint8_t y el 0 no se usa
 
-void timer_rearm_tasker() {
-  // Recorremos todas las tareas, en busca de la proxima a ejecutar
-  struct timer_task* next_task = 0;
-  for (uint8_t i = 0; i < 255; i++) {
-    if (timer_tasks[i].id != 0 && timer_tasks[i].when > timer_micros()) {
-      // Si la tarea está activa, comprobamos si es la mas próxima a ejecutar
-      if (next_task == 0 || timer_tasks[i].when < next_task->when) {
-        // Si es la mas próxima a ejecutar, la guardamos
-        next_task = &timer_tasks[i];
-      }
-    }
-  }
-
-  // Si next_task no esta vacio, rearmamos el tasker (comparador 1)
-  if (next_task != 0) {
+void timer_arm_task(uint8_t id) {
 #ifdef DEBUG
-    serial_print("\n Rearming ");
-    serial_printdecbyte(next_task->id);
-    serial_print(" ");
-    serial_printdecword(next_task->when);
-    serial_print("\n");
+  serial_print("\n Rearming ");
+  serial_printdecbyte(next_task->id);
+  serial_print(" ");
+  serial_printdecword(next_task->when);
+  serial_print("\n");
 #endif  // DEBUG
+  struct timer_task* task = &timer_tasks[id - 1];
 
-    // Ponemos en que valor del contador global se activará el comparador 1
-    _IO_PORTS_W(M6812_TC1) = MICROS_2_TICKS(next_task->when, timer_tcm_factor);
-    // Encendemos el comparador 1
-    _io_ports[M6812_TIOS] |= M6812B_IOS1;
-    // Ponemos el flag del comparador 1 a 0
-    _io_ports[M6812_TFLG1] |= M6812B_IOS1;
-    // Habilitamos las interrupciones del comparador 1
-    _io_ports[M6812_TMSK1] |= M6812B_IOS1;
+  // Ponemos en que valor del contador global se activará el comparador id-1
+  _IO_PORTS_W(M6812_TC0 + (id - 1) * 2) =
+      MICROS_2_TICKS(task->when, timer_tcm_factor);
+  // Encendemos el comparador id-1
+  _io_ports[M6812_TIOS] |= M6812B_IOS0 << (id - 1);
+  // Ponemos el flag del comparador id-1 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS0 << (id - 1);
+  // Habilitamos las interrupciones del comparador id-1
+  _io_ports[M6812_TMSK1] |= M6812B_IOS0 << (id - 1);
+}
 
-    // Especificamos que el tasker está armado
-    timer_tasker_armed = 1;
+void timer_execute_task(uint8_t id) {
+#ifdef DEBUG
+  serial_print("\n int task ");
+  serial_printdecbyte(id);
+  serial_print("\n");
+#endif  // DEBUG
+  struct timer_task* task = &timer_tasks[id - 1];
+
+  // Comprobamos si efectivamente es el momento de ejcutar la tarea 1
+  if (task->id != 0 && task->when <= timer_micros()) {
+    // Si la tarea está activa y es hora de ejecutarla, la ejecutamos
+    task->task(task->params);
+
+    // Si la tarea es periódica, la rearmamos
+    if (task->periodic != 0) {
+      task->when += task->periodic;
+      timer_arm_task(task->id);
+    } else {
+      // Si no es periódica, la eliminamos
+      timer_remove_task(task->id);
+      // Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~M6812B_IOS0 << id - 1;
+    }
   }
 }
 
 uint8_t timer_add_task(void (*task)(void* params), void* params,
                        uint32_t when) {
   // Buscamos un hueco libre en el array de tareas
-  for (uint8_t i = 0; i < 255; i++) {
+  for (uint8_t i = 0; i < 8; i++) {
     // Si el id es 0, es que está libre
     if (timer_tasks[i].id == 0) {
       // Llenamos los campos de la tarea
@@ -137,10 +147,8 @@ uint8_t timer_add_task(void (*task)(void* params), void* params,
       timer_tasks[i].task = task;      // La función a ejecutar
       timer_tasks[i].params = params;  // Los parámetros de la función
 
-      // Comprobamos si hay que rearmar el tasker
-      if (timer_tasker_armed == 0) {
-        timer_rearm_tasker();
-      }
+      // Armamos la interupcion de la tarea
+      timer_arm_task(i + 1);
 
       return i + 1;  // Devolvemos el id
     }
@@ -153,7 +161,7 @@ uint8_t timer_add_task(void (*task)(void* params), void* params,
 uint8_t timer_add_periodic_task(void (*task)(void* params), void* params,
                                 uint32_t period) {
   // Buscamos un hueco libre en el array de tareas
-  for (uint8_t i = 0; i < 255; i++) {
+  for (uint8_t i = 0; i < 8; i++) {
     // Si el id es 0, es que está libre
     if (timer_tasks[i].id == 0) {
       // Llenamos los campos de la tarea
@@ -165,10 +173,8 @@ uint8_t timer_add_periodic_task(void (*task)(void* params), void* params,
       timer_tasks[i].task = task;      // La función a ejecutar
       timer_tasks[i].params = params;  // Los parámetros de la función
 
-      // Comprobamos si hay que rearmar el tasker
-      if (timer_tasker_armed == 0) {
-        timer_rearm_tasker();
-      }
+      // Armamos la interupcion de la tarea
+      timer_arm_task(i + 1);
 
       return i + 1;  // Devolvemos el id
     }
@@ -202,38 +208,62 @@ void __attribute__((interrupt)) vi_tov(void) {
 }
 
 /**
- * @brief Interupción del tasker
+ * @brief Interupciones de las tareas
  *
  */
+
+void __attribute__((interrupt)) vi_ioc0(void) {
+  // Ponemos el flag del comparador 0 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS0;
+
+  timer_execute_task(1);
+}
+
 void __attribute__((interrupt)) vi_ioc1(void) {
   // Ponemos el flag del comparador 1 a 0
   _io_ports[M6812_TFLG1] |= M6812B_IOS1;
 
-  // Desarmamos el tasker
-  timer_tasker_armed = 0;
-  _io_ports[M6812_TMSK1] &= ~M6812B_IOS1;
+  timer_execute_task(2);
+}
 
-#ifdef DEBUG
-  serial_print("\n int tasker \n");
-#endif  // DEBUG
+void __attribute__((interrupt)) vi_ioc2(void) {
+  // Ponemos el flag del comparador 2 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS2;
 
-  // Recorremos todas las tareas, en busca de las que tengan un when menor o
-  // igual al actual
-  for (uint8_t i = 0; i < 255; i++) {
-    if (timer_tasks[i].id != 0 && timer_tasks[i].when <= timer_micros()) {
-      // Si la tarea está activa y es hora de ejecutarla, la ejecutamos
-      timer_tasks[i].task(timer_tasks[i].params);
+  timer_execute_task(3);
+}
 
-      // Si la tarea es periódica, la rearmamos
-      if (timer_tasks[i].periodic != 0) {
-        timer_tasks[i].when += timer_tasks[i].periodic;
-      } else {
-        // Si no es periódica, la eliminamos
-        timer_remove_task(timer_tasks[i].id);
-      }
-    }
-  }
+void __attribute__((interrupt)) vi_ioc3(void) {
+  // Ponemos el flag del comparador 3 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS3;
 
-  // Rearmamos el tasker
-  timer_rearm_tasker();
+  timer_execute_task(4);
+}
+
+void __attribute__((interrupt)) vi_ioc4(void) {
+  // Ponemos el flag del comparador 4 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS4;
+
+  timer_execute_task(5);
+}
+
+void __attribute__((interrupt)) vi_ioc5(void) {
+  // Ponemos el flag del comparador 5 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS5;
+
+  timer_execute_task(6);
+}
+
+void __attribute__((interrupt)) vi_ioc6(void) {
+  // Ponemos el flag del comparador 6 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS6;
+
+  timer_execute_task(7);
+}
+
+void __attribute__((interrupt)) vi_ioc7(void) {
+  // Ponemos el flag del comparador 7 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS7;
+
+  timer_execute_task(8);
 }
