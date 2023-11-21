@@ -34,7 +34,7 @@ int main() {
   serial_print("\n");
 
   while (1) {
-    serial_print("\inicial ");
+    serial_print("\n inicial ");
     serial_printdeclong(timer_milis());
     timer_sleep_milis(1000);
     serial_print(" Final ");

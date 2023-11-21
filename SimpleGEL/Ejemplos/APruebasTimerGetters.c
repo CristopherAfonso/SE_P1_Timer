@@ -23,18 +23,10 @@ int main() {
   uint32_t begin;
   uint32_t end;
 
+
   while (1) {
     begin = timer_milis();
-    timer_sleep_milis(1000);
     end = timer_milis();
-    serial_print("\n\nInicial Milis: ");
-    serial_printdeclong(begin);
-    serial_print(" ; Final Milis: ");
-    serial_printdeclong(end);
-
-    begin = timer_micros();
-    timer_sleep_milis(1000);
-    end = timer_micros();
     serial_print("\nInicial Micros: ");
     serial_printdeclong(begin);
     serial_print(" ; Final Micros: ");

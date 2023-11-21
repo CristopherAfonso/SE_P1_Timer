@@ -18,22 +18,27 @@
 #include <types.h>
 
 int main() {
+	
   serial_init();
   timer_init(3);
   uint32_t cuenta = 0;
-  uint32_t miliseg = 0;
+  uint32_t miliseg_ini = 0;
+  uint32_t miliseg_fin = 0;
   uint32_t microseg = 0;
 
   // Cuenta cada segundo
   while (1) {
+	miliseg_ini = timer_milis();
     timer_sleep_milis(1000);
     cuenta++;
-    miliseg = timer_milis();
+    miliseg_fin = timer_milis();
     microseg = timer_micros();
     serial_print("\nSegundos: ");
     serial_printdeclong(cuenta);
-    serial_print("; Milisegundos: ");
-    serial_printdeclong(miliseg);
+    serial_print("; Milisegundos ini: ");
+    serial_printdeclong(miliseg_ini);
+    serial_print("; Milisegundos fin: ");
+    serial_printdeclong(miliseg_fin);
     serial_print("; Microsegundos: ");
     serial_printdeclong(microseg);
   }

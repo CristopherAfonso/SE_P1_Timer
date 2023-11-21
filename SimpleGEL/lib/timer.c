@@ -14,6 +14,8 @@
 #include <timer.h>
 #include <types.h>
 
+//#define DEBUG
+
 #define TCM_FREQ(tcm_factor) (M6812_CPU_E_CLOCK / (1 << tcm_factor))
 // Pasamos de ticks a microsegundos según el factor de escala del temporizador
 #define TICKS_2_MICROS(ticks, tcm_factor) \
@@ -45,7 +47,7 @@ uint32_t timer_milis(void) {
   uint32_t result = (uint32_t)timer_ticks_msb << 16;
 
   // Le sumamos el valor actual del contador
-  result += _io_ports[M6812_TCNT];
+  result += _IO_PORTS_W(M6812_TCNT);
 
   // Cogemos el tiempo en microsegundos y lo pasamos a milisegundos
   return TICKS_2_MICROS(result, timer_tcm_factor) / 1000;
@@ -56,7 +58,7 @@ uint32_t timer_micros(void) {
   uint32_t result = (uint32_t)timer_ticks_msb << 16;
 
   // Le sumamos el valor actual del contador
-  result += _io_ports[M6812_TCNT];
+  result += _IO_PORTS_W(M6812_TCNT);
 
   return TICKS_2_MICROS(result, timer_tcm_factor);
 }
@@ -87,14 +89,14 @@ struct timer_task timer_tasks[8];  // 8 tareas como máximo, pues el id es
                                    // uint8_t y el 0 no se usa
 
 void timer_arm_task(uint8_t id) {
+  struct timer_task* task = &timer_tasks[id - 1];
 #ifdef DEBUG
   serial_print("\n Rearming ");
-  serial_printdecbyte(next_task->id);
+  serial_printdecbyte(task->id);
   serial_print(" ");
-  serial_printdecword(next_task->when);
+  serial_printdecword(task->when);
   serial_print("\n");
 #endif  // DEBUG
-  struct timer_task* task = &timer_tasks[id - 1];
 
   // Ponemos en que valor del contador global se activará el comparador id-1
   _IO_PORTS_W(M6812_TC0 + (id - 1) * 2) =
@@ -105,6 +107,16 @@ void timer_arm_task(uint8_t id) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS0 << (id - 1);
   // Habilitamos las interrupciones del comparador id-1
   _io_ports[M6812_TMSK1] |= M6812B_IOS0 << (id - 1);
+  
+#ifdef DEBUG
+  serial_print("\n TIOS ");
+  serial_printbinbyte(_io_ports[M6812_TIOS]);
+  serial_print(" TFLG1 ");
+  serial_printbinword(_io_ports[M6812_TFLG1]);
+  serial_print(" TMSK1 ");
+  serial_printbinword(_io_ports[M6812_TMSK1]);
+  serial_print("\n");
+#endif  // DEBUG
 }
 
 void timer_execute_task(uint8_t id) {
@@ -128,7 +140,7 @@ void timer_execute_task(uint8_t id) {
       // Si no es periódica, la eliminamos
       timer_remove_task(task->id);
       // Desarmamos la interupcion
-      _io_ports[M6812_TMSK1] &= ~M6812B_IOS0 << id - 1;
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS0 << (id - 1));
     }
   }
 }
@@ -197,10 +209,10 @@ void timer_remove_task(uint8_t id) {
  */
 void __attribute__((interrupt)) vi_tov(void) {
   // Ponemos el flag de desbordamiento a 0
-  _io_ports[M6812_TFLG2] = M6812B_TOF;
+  _io_ports[M6812_TFLG2] |= M6812B_TOF;
 
 #ifdef DEBUG
-  serial_print("\n int overflow \n");
+  //serial_print("\n int overflow \n");
 #endif  // DEBUG
 
   // Incrementamos el contador de ticks MSB
@@ -213,8 +225,8 @@ void __attribute__((interrupt)) vi_tov(void) {
  */
 
 void __attribute__((interrupt)) vi_ioc0(void) {
-  // Ponemos el flag del comparador 0 a 0
-  _io_ports[M6812_TFLG1] |= M6812B_IOS0;
+  // Ponemos el flag del comparador 1 a 0
+  _io_ports[M6812_TFLG1] |= M6812B_IOS1;
 
   timer_execute_task(1);
 }
@@ -244,7 +256,7 @@ void __attribute__((interrupt)) vi_ioc4(void) {
   // Ponemos el flag del comparador 4 a 0
   _io_ports[M6812_TFLG1] |= M6812B_IOS4;
 
-  timer_execute_task(5);
+  timer_execute_task(4);
 }
 
 void __attribute__((interrupt)) vi_ioc5(void) {
@@ -259,11 +271,4 @@ void __attribute__((interrupt)) vi_ioc6(void) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS6;
 
   timer_execute_task(7);
-}
-
-void __attribute__((interrupt)) vi_ioc7(void) {
-  // Ponemos el flag del comparador 7 a 0
-  _io_ports[M6812_TFLG1] |= M6812B_IOS7;
-
-  timer_execute_task(8);
 }
