@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/themaster/Documentos/SE/SE_P1_Timer/SimpleGEL/lib",
-      "program": "/home/themaster/Documentos/SE/SE_P1_Timer/SimpleGEL/lib/build/Debug/outDebug",
+      "cwd": "/home/themaster/Documentos/SE/SE_P1_Timer/SimpleGEL/Ejemplos",
+      "program": "/home/themaster/Documentos/SE/SE_P1_Timer/SimpleGEL/Ejemplos/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

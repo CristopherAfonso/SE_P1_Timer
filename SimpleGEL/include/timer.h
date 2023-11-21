@@ -1,43 +1,74 @@
-/**
- * @file timer.h
+/** 
+ * Universidad de La Laguna (ULL)
+ * Escuela Superior de Ingenieria y Tecnologia (ESIT)
+ * Grado en Ingenieria Informatica
+ * Asignatura: Sistemas Empotrados
+ * Curso: 4º
+ * Itinerario 2: Ingeniería de Computadores
+ * Practica 1: Librerías
+ * @author Cristopher Manuel Afonso Mora (alu0101402031@ull.edu.es)
  * @author Francesco La Spina (alu0101435022@ull.edu.es)
- * @author CRISTOPHER MANUEL AFONSO MORA (alu0101402031@ull.edu.es)
- * @brief Libreria de temporizacion
+ * @date 16/11/2023
+ * 
+ * @file timer.h 
+ * @brief Donde se aloja la declaración de las funciones de la librería
+ * timer, que se encarga de gestionar el temporizador de forma más
+ * asequible en el microcontrolador 68HC12
+ *
+ * @bug No hay bugs conocidos
+ * 
  * @version 0.1
- * @date 2023-11-19
- *
  * @copyright Copyright (c) 2023
- *
+ * @brief Historial de Revisiones 
+ * 16/11/23 - Creacion del archivo:
+ *            Se han creado todas las definiciones de cada función que
+ *            usará esta librería, cada una documentada
+ * 17/11/23 - A la función timer_init se le ha añadido un parametro
+ *            para especificar el factor de escala del timer.
+ * 21/11/23 - Archivo terminado, documentación finalizada
  */
+
+#ifndef _TIMER_H
+#define _TIMER_H
+
 #include <types.h>
 
-/**
- * @brief Funcion que se necesita llamar nada mas iniciar el sistema, para que
- * el timer funcione
+/*! @defgroup timer Timer Functions
  *
+ * Conjunto de funciones que facilitan la interacción con el temporizador
+ * del microcontrolador 68HC12
  *
+ */
+/*@{*/
+
+/*! Inicializa el temporizador.
+ * @brief Funcion que se necesita llamar nada mas iniciar el sistema,
+ * para que el timer funcione
+ * 
+ * @param tcm_factor especifica el factor de escala del timer, debe
+ * tener un valor entre 1, 2, 4, 8, 16, 32, 64, 128
  */
 void timer_init(uint8_t tcm_factor);
 
-/**
+/*! Obtiene el tiempo en milisegundos desde que se inicio el sistema
  * @brief Obtiene el tiempo en milisegundos desde que se inicio el sistema
- * @warning A los 71 minutos de funcionamiento el contador se reinicia, y el
- * tiempo de encendido se reiniciara
+ * @warning El tiempo en desbordar dependerá del factor del timer, pero
+ * para un factor de 3, el tiempo en desborde es de 71 minutos
  *
- * @return uint32_t Tiempo en milisegundos
+ * @return uint32_t Tiempo del contador global en milisegundos
  */
 uint32_t timer_milis(void);
 
-/**
+/*! Obtiene el tiempo en microsecundos desde que se inicio el sistema
  * @brief Obtiene el tiempo en microsecundos desde que se inicio el sistema
- * @warning A los 71 minutos de funcionamiento el contador se reinicia, y el
- * tiempo de encendido se reiniciara
+ * @warning El tiempo en desbordar dependerá del factor del timer, pero
+ * para un factor de 3, el tiempo en desborde es de 71 minutos
  *
- * @return uint32_t Tiempo en microsecundos
+ * @return uint32_t Tiempo del contador global en microsecundos
  */
 uint32_t timer_micros(void);
 
-/**
+/*! El programa se queda esperando el tiempo indicado en milisegundos
  * @brief El programa se queda esperando el tiempo indicado en milisegundos
  * @warning Las interrupciones no se desactivan durante la espera
  * @warning No se pueden poner tiempos superiores a 71 minutos (2^32/1000
@@ -47,43 +78,46 @@ uint32_t timer_micros(void);
  */
 void timer_sleep_milis(uint32_t milis);
 
-/**
+/*! El programa se queda esperando el tiempo indicado en microsecundos
  * @brief El programa se queda esperando el tiempo indicado en microsecundos
  * @warning Las interrupciones no se desactivan durante la espera
- * @warning No se pueden poner tiempos superiores a 71 minutos (2^32/1000
+ * @warning No se pueden poner tiempos superiores a 71 minutos (2^32
  * milisegundos)
  *
  * @param micros El tiempo de espera en microsecundos
  */
 void timer_sleep_micros(uint32_t micros);
 
-/**
- * @brief Registra una tarea para que se ejecute cuando pase el tiempo indicado
- * desde que se inicio el sistema
+/*! Registra una tarea para que se ejecute cuando pase el tiempo dado
+ * @brief Registra una tarea para que se ejecute cuando pase el tiempo
+ * indicado desde que se inicio el sistema
  * @warning La tarea se ejecutara en una interupcion, por lo que no se
  * puede llamar a funciones que no sean seguras en interrupciones. Si se
- * registran tareas muy seguidas, puede colisionar con la anterior, generando un
- * estado inestable.
+ * registran tareas muy seguidas, puede colisionar con la anterior,
+ * generando un estado inestable.
  *
- * @param task funcion que se ejecutara, debe ser void task(void * params), en
- * donde params es un puntero a los parametros que se le pasaran a la funcion
+ * @param task funcion que se ejecutara, debe ser void task(void * params),
+ * en donde params es un puntero a los parametros que se le pasaran a la
+ * funcion
  * @param params puntero a los parametros que se le pasaran a la funcion
  * @param when tiempo en microsegundos desde que se inicio el sistema, se
  * recomienda que sea mayor a 1000 del actual
  * @return uint8_t id de la tarea
  */
-uint8_t timer_add_task(void (*task)(void* params), void* params, uint32_t when);
+uint8_t timer_add_task(void (*task)(void* params), void* params,
+                       uint32_t when);
 
-/**
- * @brief Registra una tarea para que se ejecute periodicamente cada cierto
- * tiempo
+/*! Registra una tarea para que se ejecute periodicamente
+ * @brief Registra una tarea para que se ejecute periodicamente cada
+ * cierto tiempo
  * @warning La tarea se ejecutara en una interupcion, por lo que no se
  * puede llamar a funciones que no sean seguras en interrupciones. Si se
- * registran tareas muy seguidas, puede colisionar con la anterior, generando un
- * estado inestable.
- *
- * @param task funcion que se ejecutara, debe ser void task(void * params), en
- * donde params es un puntero a los parametros que se le pasaran a la funcion
+ * registran tareas muy seguidas, puede colisionar con la anterior,
+ * generando un estado inestable.
+ * 
+ * @param task funcion que se ejecutara, debe ser void task(void * params),
+ * en donde params es un puntero a los parametros que se le pasaran a la
+ * funcion
  * @param params puntero a los parametros que se le pasaran a la funcion
  * @param period periodo en microsegundos, se recomienda que sea mayor a 1000
  * @return uint8_t id de la tarea
@@ -91,9 +125,13 @@ uint8_t timer_add_task(void (*task)(void* params), void* params, uint32_t when);
 uint8_t timer_add_periodic_task(void (*task)(void* params), void* params,
                                 uint32_t period);
 
-/**
+/*! Elimina una tarea registrada
  * @brief Elimina una tarea
  *
- * @param id id de la tarea
+ * @param id id de la tarea a eliminar
  */
 void timer_remove_task(uint8_t id);
+
+/*@}*/
+
+#endif /* _TIMER_H */
