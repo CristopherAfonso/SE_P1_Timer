@@ -40,10 +40,10 @@ int main() {
   timer_init(3); ///< Inicializamos el temporizador con factor de 3
   
   /// Inicializamos las variables que almacenaran los valores a mostrar
-  uint32_t mseg_begin;
-  uint32_t mseg_end;
-  uint32_t useg_begin;
-  uint32_t useg_end;
+  uint32_t mseg_begin = 0;
+  uint32_t mseg_end = 0;
+  uint32_t useg_begin = 0;
+  uint32_t useg_end = 0;
 
   /// Imprimimos mensaje de inicio
   serial_print("\nPrograma test_timer_getters:\n");
