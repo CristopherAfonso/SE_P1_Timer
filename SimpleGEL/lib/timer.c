@@ -151,8 +151,8 @@ struct timer_task {
 };
 
 /// tamaño timer task: 1(id) + 1(periodic) + 4(when) + 2(task) + 2(params) = 10
-/// bytes 10 * 254 = 2540 bytes = 2.48 KB
-/// 8 tareas como máximo, pues el id es uint8_t y el 0 no se usa
+/// bytes 10 * 8 = 80 bytes
+/// 8 tareas como máximo, pues solo tenemos 8 comparadores y el 0 no se usa
 struct timer_task timer_tasks[8];
 
 /**
