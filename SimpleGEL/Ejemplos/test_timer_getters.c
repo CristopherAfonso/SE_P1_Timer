@@ -33,8 +33,8 @@
 #include <sys/param.h>
 #include <sys/sio.h>
 #include <types.h>
-#include <timer.h>
-
+#include <timer.h> 
+ 
 int main() {
   serial_init(); ///< Inicializamos el puerto serie
   timer_init(3); ///< Inicializamos el temporizador con factor de 3

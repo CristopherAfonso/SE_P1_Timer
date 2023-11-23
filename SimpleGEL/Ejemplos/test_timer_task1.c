@@ -58,8 +58,9 @@ void initial_task_2(void *params) {
  * @param params Puntero a los parametros de la tarea
  */
 void period_task_1(void *params) {
+  uint32_t resultado = timer_milis();
   serial_print("Periodic task 1 executed Milis: ");
-  serial_printdeclong(timer_milis());
+  serial_printdeclong(resultado);
   serial_print("\n");
 }
 
@@ -78,8 +79,8 @@ int main() {
 
   /// Declaramos las variables a usar
   uint8_t param = 0;
-  uint8_t id_0 = timer_add_task(initial_task, &param, timer_micros() + 1000000);
   uint8_t id_1 = timer_add_periodic_task(period_task_1, &param, 3000000);
+  uint8_t id_0 = timer_add_task(initial_task, &param, timer_micros() + 1000000);
   uint8_t id_2 = timer_add_periodic_task(period_task_2, &param, 6500000);
   uint8_t id_3 = timer_add_task(initial_task_2, &param, timer_micros() + 7000000);
 

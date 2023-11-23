@@ -81,6 +81,7 @@ void timer_init(uint8_t tcm_factor) {
 /**
  * @brief Función que devuelve el tiempo en milisegundos desde que se
  * inició el temporizador
+ * @warning El retardo minimo es de 2,5 miliseguddos y puede subir hasta 4
  * 
  * @return uint32_t Tiempo en milisegundos desde que se inició el temporizador
  */
@@ -97,6 +98,7 @@ uint32_t timer_milis(void) {
 /**
  * @brief Función que devuelve el tiempo en microsegundos desde que se
  * inició el temporizador
+ * @warning El retardo minimo es de 2,5 miliseguddos y puede subir hasta 4
  * 
  * @return uint32_t Tiempo en microsegundos desde que se inició el temporizador
  */
@@ -194,42 +196,7 @@ void timer_arm_task(uint8_t id) {
     serial_print("\n");
   #endif  // DEBUG
 }
-
-/**
- * @brief Función que ejecuta una tarea del temporizador
- * 
- * @param id Identificador de la tarea a ejecutar
- */
-void timer_execute_task(uint8_t id) {
-  #ifdef DEBUG
-    serial_print("\n int task ");
-    serial_printdecbyte(id);
-    serial_print("\n");
-  #endif  // DEBUG
-
-  /// Obtenemos la tarea a ejecutar
-  struct timer_task* task = &timer_tasks[id - 1];
-
-  /// Comprobamos si efectivamente es el momento de ejcutar la tarea 1
-  if (task->id != 0 && task->when <= timer_micros()) {
-
-    /// Si la tarea está activa y es hora de ejecutarla, la ejecutamos
-    task->task(task->params);
-
-    /// Si la tarea es periódica, la rearmamos
-    if (task->periodic != 0) {
-      task->when += task->periodic;
-      timer_arm_task(task->id);
-    } else {
-      /// Si no es periódica, la eliminamos
-      timer_remove_task(task->id);
-
-      /// Desarmamos la interupcion
-      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS0 << (id - 1));
-    }
-  }
-}
-
+ 
 /**
  * @brief Función que registra una tarea para que se ejecute cuando pase
  * el tiempo indicado desde que se inició el sistema
@@ -309,6 +276,9 @@ void timer_remove_task(uint8_t id) {
   /// Comprobamos que el id sea válido
   if (id > 0 && id < 255) {
     timer_tasks[id - 1].id = 0;
+    
+    /// Desarmamos la interupcion
+    _io_ports[M6812_TMSK1] &= ~(M6812B_IOS0 << (id - 1));
   }
 }
 
@@ -331,7 +301,22 @@ void __attribute__((interrupt)) vi_tov(void) {
  */
 void __attribute__((interrupt)) vi_ioc0(void) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS1; ///< flag del comparador 0 = 0
-  timer_execute_task(1);
+
+  if((timer_tasks[0].when >> 16) <= timer_ticks_msb) {
+	timer_tasks[0].task(timer_tasks[0].params);
+  
+    /// Si la tarea es periódica, la rearmamos
+    if (timer_tasks[0].periodic != 0) {
+      timer_tasks[0].when += timer_tasks[0].periodic;
+	  timer_arm_task(timer_tasks[0].id);
+    } else {
+      /// Si no es periódica, la eliminamos
+      timer_remove_task(timer_tasks[0].id);
+
+      /// Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS0);
+    }
+  }
 }
 
 /**
@@ -340,7 +325,22 @@ void __attribute__((interrupt)) vi_ioc0(void) {
  */
 void __attribute__((interrupt)) vi_ioc1(void) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS1; ///< flag del comparador 1 = 0
-  timer_execute_task(2);
+
+  if((timer_tasks[1].when >> 16) <= timer_ticks_msb) {
+	timer_tasks[1].task(timer_tasks[1].params);
+  
+    /// Si la tarea es periódica, la rearmamos
+    if (timer_tasks[1].periodic != 0) {
+      timer_tasks[1].when += timer_tasks[1].periodic;
+	  timer_arm_task(timer_tasks[1].id);
+    } else {
+      /// Si no es periódica, la eliminamos
+      timer_remove_task(timer_tasks[1].id);
+
+      /// Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS1);
+    }
+  }
 }
 
 /**
@@ -349,7 +349,22 @@ void __attribute__((interrupt)) vi_ioc1(void) {
  */
 void __attribute__((interrupt)) vi_ioc2(void) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS2; ///< flag del comparador 2 = 0
-  timer_execute_task(3);
+
+  if((timer_tasks[2].when >> 16) <= timer_ticks_msb) {
+	timer_tasks[2].task(timer_tasks[2].params);
+  
+    /// Si la tarea es periódica, la rearmamos
+    if (timer_tasks[2].periodic != 0) {
+      timer_tasks[2].when += timer_tasks[2].periodic;
+	  timer_arm_task(timer_tasks[2].id);
+    } else {
+      /// Si no es periódica, la eliminamos
+      timer_remove_task(timer_tasks[2].id);
+
+      /// Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS2);
+    }
+  }
 }
 
 /**
@@ -358,7 +373,22 @@ void __attribute__((interrupt)) vi_ioc2(void) {
  */
 void __attribute__((interrupt)) vi_ioc3(void) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS3; ///< flag del comparador 3 = 0
-  timer_execute_task(4);
+  
+  if((timer_tasks[3].when >> 16) <= timer_ticks_msb) {
+	timer_tasks[3].task(timer_tasks[3].params);
+  
+    /// Si la tarea es periódica, la rearmamos
+    if (timer_tasks[3].periodic != 0) {
+      timer_tasks[3].when += timer_tasks[3].periodic;
+	  timer_arm_task(timer_tasks[3].id);
+    } else {
+      /// Si no es periódica, la eliminamos
+      timer_remove_task(timer_tasks[3].id);
+
+      /// Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS3);
+    }
+  }
 }
 
 /**
@@ -367,7 +397,22 @@ void __attribute__((interrupt)) vi_ioc3(void) {
  */
 void __attribute__((interrupt)) vi_ioc4(void) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS4; ///< flag del comparador 4 = 0
-  timer_execute_task(4);
+  
+  if((timer_tasks[4].when >> 16) <= timer_ticks_msb) {
+	timer_tasks[4].task(timer_tasks[4].params);
+  
+    /// Si la tarea es periódica, la rearmamos
+    if (timer_tasks[4].periodic != 0) {
+      timer_tasks[4].when += timer_tasks[4].periodic;
+	  timer_arm_task(timer_tasks[4].id);
+    } else {
+      /// Si no es periódica, la eliminamos
+      timer_remove_task(timer_tasks[4].id);
+
+      /// Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS4);
+    }
+  }
 }
 
 /**
@@ -377,7 +422,22 @@ void __attribute__((interrupt)) vi_ioc4(void) {
 void __attribute__((interrupt)) vi_ioc5(void) {
   // Ponemos el flag del comparador 5 a 0
   _io_ports[M6812_TFLG1] |= M6812B_IOS5; ///< flag del comparador 5 = 0
-  timer_execute_task(6);
+  
+  if((timer_tasks[5].when >> 16) <= timer_ticks_msb) {
+	timer_tasks[5].task(timer_tasks[5].params);
+  
+    /// Si la tarea es periódica, la rearmamos
+    if (timer_tasks[5].periodic != 0) {
+      timer_tasks[5].when += timer_tasks[5].periodic;
+	  timer_arm_task(timer_tasks[5].id);
+    } else {
+      /// Si no es periódica, la eliminamos
+      timer_remove_task(timer_tasks[5].id);
+
+      /// Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS5);
+    }
+  }
 }
 
 /**
@@ -386,5 +446,20 @@ void __attribute__((interrupt)) vi_ioc5(void) {
  */
 void __attribute__((interrupt)) vi_ioc6(void) {
   _io_ports[M6812_TFLG1] |= M6812B_IOS6; ///< flag del comparador 6 = 0
-  timer_execute_task(7);
+  
+  if((timer_tasks[6].when >> 16) <= timer_ticks_msb) {
+	timer_tasks[6].task(timer_tasks[6].params);
+  
+    /// Si la tarea es periódica, la rearmamos
+    if (timer_tasks[6].periodic != 0) {
+      timer_tasks[6].when += timer_tasks[6].periodic;
+	  timer_arm_task(timer_tasks[6].id);
+    } else {
+      /// Si no es periódica, la eliminamos
+      timer_remove_task(timer_tasks[6].id);
+
+      /// Desarmamos la interupcion
+      _io_ports[M6812_TMSK1] &= ~(M6812B_IOS6);
+    }
+  }
 }
